@@ -168,19 +168,22 @@ CSRMatrix CSRRemove(CSRMatrix csr, IdArray entries);
 
 template <DGLDeviceType XPU, typename IdType, typename FloatType>
 std::pair<COOMatrix, FloatArray> CSRLaborSampling(
-    CSRMatrix mat,
-    IdArray rows,
-    int64_t num_samples,
-    FloatArray prob,
-    int importance_sampling,
-    IdArray random_seed,
-    IdArray NIDs);
+    CSRMatrix mat, IdArray rows, int64_t num_samples, FloatArray prob,
+    int importance_sampling, IdArray random_seed, IdArray NIDs);
 
 // FloatType is the type of probability data.
 template <DGLDeviceType XPU, typename IdType, typename DType>
 COOMatrix CSRRowWiseSampling(
     CSRMatrix mat, IdArray rows, int64_t num_samples, NDArray prob_or_mask,
     bool replace);
+
+// FloatType is the type of probability data.
+template <
+    DGLDeviceType XPU, typename IdxType, typename DType, bool map_seed_nodes>
+std::pair<CSRMatrix, IdArray> CSRRowWiseSamplingFused(
+    CSRMatrix mat, IdArray rows, IdArray seed_mapping,
+    std::vector<IdxType>& new_seed_nodes, int64_t num_samples,
+    NDArray prob_or_mask, bool replace);
 
 // FloatType is the type of probability data.
 template <DGLDeviceType XPU, typename IdType, typename DType>
@@ -193,6 +196,11 @@ COOMatrix CSRRowWisePerEtypeSampling(
 template <DGLDeviceType XPU, typename IdType>
 COOMatrix CSRRowWiseSamplingUniform(
     CSRMatrix mat, IdArray rows, int64_t num_samples, bool replace);
+
+template <DGLDeviceType XPU, typename IdType, bool map_seed_nodes>
+std::pair<CSRMatrix, IdArray> CSRRowWiseSamplingUniformFused(
+    CSRMatrix mat, IdArray rows, IdArray seed_mapping,
+    std::vector<IdType>& new_seed_nodes, int64_t num_samples, bool replace);
 
 template <DGLDeviceType XPU, typename IdType>
 COOMatrix CSRRowWisePerEtypeSamplingUniform(
@@ -285,13 +293,8 @@ COOMatrix COORemove(COOMatrix coo, IdArray entries);
 
 template <DGLDeviceType XPU, typename IdType, typename FloatType>
 std::pair<COOMatrix, FloatArray> COOLaborSampling(
-    COOMatrix mat,
-    IdArray rows,
-    int64_t num_samples,
-    FloatArray prob,
-    int importance_sampling,
-    IdArray random_seed,
-    IdArray NIDs);
+    COOMatrix mat, IdArray rows, int64_t num_samples, FloatArray prob,
+    int importance_sampling, IdArray random_seed, IdArray NIDs);
 
 // FloatType is the type of probability data.
 template <DGLDeviceType XPU, typename IdType, typename DType>
