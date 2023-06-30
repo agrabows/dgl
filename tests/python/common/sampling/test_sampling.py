@@ -1033,21 +1033,21 @@ def _test_sample_neighbors_topk_outedge(hypersparse):
 
 def test_sample_neighbors_noprob():
     _test_sample_neighbors(False, None, False)
-    if F._default_context_str != "gpu":
+    if F._default_context_str != "gpu" and F.backend_name == "pytorch":
         _test_sample_neighbors(False, None, True)
     # _test_sample_neighbors(True)
 
 
 def test_sample_neighbors_prob():
     _test_sample_neighbors(False, "prob", False)
-    if F._default_context_str != "gpu":
+    if F._default_context_str != "gpu" and F.backend_name == "pytorch":
         _test_sample_neighbors(False, "prob", True)
     # _test_sample_neighbors(True)
 
 
 def test_sample_neighbors_outedge():
     _test_sample_neighbors_outedge(False, False)
-    if F._default_context_str != "gpu":
+    if F._default_context_str != "gpu" and F.backend_name == "pytorch":
         _test_sample_neighbors_outedge(False, True)
     # _test_sample_neighbors_outedge(True)
 
@@ -1084,8 +1084,10 @@ def test_sample_neighbors_topk_outedge():
 
 @pytest.mark.parametrize("fused", [False, True])
 def test_sample_neighbors_with_0deg(fused):
-    if fused and F._default_context_str == "gpu":
-        pytest.skip("Fused sampling doesn't support GPU.")
+    if fused and (
+        F._default_context_str == "gpu" or F.backend_name != "pytorch"
+    ):
+        pytest.skip("Fused sampling support CPU with backend PyTorch.")
     g = dgl.graph(([], []), num_nodes=5).to(F.ctx())
     sg = dgl.sampling.sample_neighbors(
         g,
@@ -1471,8 +1473,10 @@ def test_sample_neighbors_etype_sorted_homogeneous(format_, direction):
 @pytest.mark.parametrize("dtype", ["int32", "int64"])
 @pytest.mark.parametrize("fused", [False, True])
 def test_sample_neighbors_exclude_edges_heteroG(dtype, fused):
-    if fused and F._default_context_str == "gpu":
-        pytest.skip("Fused sampling doesn't support GPU.")
+    if fused and (
+        F._default_context_str == "gpu" or F.backend_name != "pytorch"
+    ):
+        pytest.skip("Fused sampling support CPU with backend PyTorch.")
     d_i_d_u_nodes = F.zerocopy_from_numpy(
         np.unique(np.random.randint(300, size=100, dtype=dtype))
     )
@@ -1631,8 +1635,10 @@ def test_sample_neighbors_exclude_edges_heteroG(dtype, fused):
 @pytest.mark.parametrize("dtype", ["int32", "int64"])
 @pytest.mark.parametrize("fused", [False, True])
 def test_sample_neighbors_exclude_edges_homoG(dtype, fused):
-    if fused and F._default_context_str == "gpu":
-        pytest.skip("Fused sampling doesn't support GPU.")
+    if fused and (
+        F._default_context_str == "gpu" or F.backend_name != "pytorch"
+    ):
+        pytest.skip("Fused sampling support CPU with backend PyTorch.")
     u_nodes = F.zerocopy_from_numpy(
         np.unique(np.random.randint(300, size=100, dtype=dtype))
     )
