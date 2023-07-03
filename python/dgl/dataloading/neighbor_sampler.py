@@ -149,11 +149,15 @@ class NeighborSampler(BlockSampler):
     def sample_blocks(self, g, seed_nodes, exclude_eids=None):
         output_nodes = seed_nodes
         blocks = []
-        if (
-            F.device_type(g.device) == "cpu"
-            and F.backend_name == "pytorch"
-            and self.fused
-        ):
+        cpu = F.device_type(g.device) == "cpu"
+        if type(seed_nodes) is dict:
+            for ntype in list(seed_nodes.keys()):
+                if not cpu:
+                    break
+                cpu = cpu and F.device_type(seed_nodes[ntype].device) == "cpu"
+        else:
+            cpu = cpu and F.device_type(seed_nodes.device) == "cpu"
+        if cpu and F.backend_name == "pytorch" and self.fused:
             if self.g != g:
                 self.mapping = {}
                 self.g = g
