@@ -98,7 +98,7 @@ using EtypeRangePickFn = std::function<void(
 template <typename IdxType, bool map_seed_nodes>
 std::pair<CSRMatrix, IdArray> CSRRowWisePickFused(
     CSRMatrix mat, IdArray rows, IdArray seed_mapping,
-    std::vector<IdxType>* new_seed_nodes, int64_t num_picks, bool replace,
+    IdArray& new_seed_nodes, IdxType* max_val, IdArray& scratch_mem, int64_t num_picks, bool replace,
     PickFn<IdxType> pick_fn, NumPicksFn<IdxType> num_picks_fn) {
   using namespace aten;
 
@@ -115,6 +115,7 @@ std::pair<CSRMatrix, IdArray> CSRRowWisePickFused(
 
   const int num_threads = runtime::compute_num_threads(0, num_rows, 1);
   std::vector<int64_t> global_prefix(num_threads + 1, 0);
+  std::vector<IdxType> local_max_vals(num_threads);
 
   IdArray picked_col, picked_idx, picked_coo_rows;
 
@@ -134,6 +135,7 @@ std::pair<CSRMatrix, IdArray> CSRRowWisePickFused(
     assert(thread_id + 1 < num_threads || end_i == num_rows);
 
     const int64_t num_local = end_i - start_i;
+    local_max_vals[thread_id] = 0;
 
     std::unique_ptr<int64_t[]> local_prefix(new int64_t[num_local + 1]);
     local_prefix[0] = 0;
@@ -159,12 +161,14 @@ std::pair<CSRMatrix, IdArray> CSRRowWisePickFused(
       picked_idx = IdArray::Empty({global_prefix[num_threads]}, idtype, ctx);
       picked_coo_rows =
           IdArray::Empty({global_prefix[num_threads]}, idtype, ctx);
+      scratch_mem = IdArray::Empty({2*global_prefix[num_threads]}, idtype, ctx);
     }
 
 #pragma omp barrier
     IdxType* picked_cdata = picked_col.Ptr<IdxType>();
     IdxType* picked_idata = picked_idx.Ptr<IdxType>();
     IdxType* picked_rows = picked_coo_rows.Ptr<IdxType>();
+    IdxType* scratch = scratch_mem.Ptr<IdxType>();
 
     const IdxType thread_offset = global_prefix[thread_id];
 
@@ -185,18 +189,26 @@ std::pair<CSRMatrix, IdArray> CSRRowWisePickFused(
           rid, off, len, num_picks, indices, data, picked_idata + row_offset);
       for (int64_t j = 0; j < num_picks; ++j) {
         const IdxType picked = picked_idata[row_offset + j];
-        picked_cdata[row_offset + j] = indices[picked];
+        auto val = indices[picked];
+        picked_cdata[row_offset + j] = val;
+        scratch[row_offset + j] = val;
         picked_idata[row_offset + j] = data ? data[picked] : picked;
         picked_rows[row_offset + j] = i;
+        if (local_max_vals[thread_id] < indices[picked])
+          local_max_vals[thread_id] = indices[picked];
       }
     }
   }
   block_csr_indptr_data[num_rows] = global_prefix.back();
+  for (size_t i = 0; i < num_threads; i++) {
+    *max_val = *max_val < local_max_vals[i] ? local_max_vals[i] : *max_val;
+  }
+  
 
   const IdxType num_cols = picked_col->shape[0];
   if (map_seed_nodes) {
-    (*new_seed_nodes).resize(num_rows);
-    memcpy((*new_seed_nodes).data(), rows_data, sizeof(IdxType) * num_rows);
+    new_seed_nodes = IdArray::Empty({num_rows}, idtype, ctx);
+    memcpy(new_seed_nodes->data, rows_data, sizeof(IdxType) * num_rows);
   }
 
   return std::make_pair(

@@ -183,7 +183,7 @@ template <
     DGLDeviceType XPU, typename IdxType, typename DType, bool map_seed_nodes>
 std::pair<CSRMatrix, IdArray> CSRRowWiseSamplingFused(
     CSRMatrix mat, IdArray rows, IdArray seed_mapping,
-    std::vector<IdxType>* new_seed_nodes, int64_t num_samples,
+    IdArray& new_seed_nodes, IdxType* max_val, IdArray& scratch_mem, int64_t num_samples,
     NDArray prob_or_mask, bool replace);
 
 // FloatType is the type of probability data.
@@ -201,7 +201,7 @@ COOMatrix CSRRowWiseSamplingUniform(
 template <DGLDeviceType XPU, typename IdType, bool map_seed_nodes>
 std::pair<CSRMatrix, IdArray> CSRRowWiseSamplingUniformFused(
     CSRMatrix mat, IdArray rows, IdArray seed_mapping,
-    std::vector<IdType>* new_seed_nodes, int64_t num_samples, bool replace);
+    IdArray& new_seed_nodes, IdType* max_val, IdArray& scratch_mem, int64_t num_samples, bool replace);
 
 template <DGLDeviceType XPU, typename IdType>
 COOMatrix CSRRowWisePerEtypeSamplingUniform(

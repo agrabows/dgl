@@ -697,6 +697,7 @@ def _test_sample_neighbors(hypersparse, prob, fused):
             {"user": [0, 1], "game": 0, "coin": 0},
             {"follow": 1, "play": 2, "liked-by": 0, "flips": -1},
             replace=True,
+            fused=fused,
         )
         if not fused:
             assert len(subg.ntypes) == 3
@@ -934,6 +935,7 @@ def _test_sample_neighbors_outedge(hypersparse, fused):
             prob=p,
             replace=replace,
             edge_dir="out",
+            fused=fused,
         )
 
         if not fused:
@@ -954,6 +956,7 @@ def _test_sample_neighbors_outedge(hypersparse, fused):
                 prob=p,
                 replace=replace,
                 edge_dir="out",
+                fused=fused,
             )
             if not fused:
                 assert len(subg.ntypes) == 3
@@ -1641,6 +1644,7 @@ def test_sample_neighbors_exclude_edges_heteroG(dtype, fused):
         },
         sampled_amount,
         exclude_edges=excluded_edges,
+        fused=fused,
     )
 
     if fused:
